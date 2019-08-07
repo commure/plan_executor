@@ -73,12 +73,12 @@
     <!--    you could have multiple includes, if you wanted to include codes from more than
      one code system, or include codes with different modes. we don't, in this case    -->
     <include>
-      <system value="http://loinc.org"/>
+      <system value="http://hl7.org/fhir/CodeSystem/example-crucible"/>
       <version value="2.36"/>
       <!--    for LOINC, we simply include the listed codes - no subsumption in LOINC    -->
       <!--    these were selected by hand    -->
       <concept>
-        <code value="14647-2"/>
+        <code value="chol-mmol"/>
         <!--    
           In this value set, we provide our own displays. 
           
@@ -96,20 +96,12 @@
         <display value="Cholesterol [Moles/Volume]"/>
       </concept>
       <concept>
-        <code value="2093-3"/>
+        <code value="chol-mass"/>
         <display value="Cholesterol [Mass/Volume]"/>
       </concept>
       <concept>
-        <code value="35200-5"/>
+        <code value="chol"/>
         <display value="Cholesterol [Mass Or Moles/Volume]"/>
-      </concept>
-      <!--    this is a different kind of code; whether it should be 
-        in a value set like this is a matter of clinical judgement.
-        it's here in this example value set to raise the question
-        for implementers    -->
-      <concept>
-        <code value="9342-7"/>
-        <display value="Cholesterol [Percentile]"/>
       </concept>
     </include>
   </compose>

@@ -29,7 +29,7 @@ module Crucible
           }
         }
         @valueset = nil
-        reply = @client.search(FHIR::ValueSet, options)
+        reply = @client.search(FHIR::STU3::ValueSet, options)
         if reply.code==200 && !reply.resource.nil?
           bundle = reply.resource
           @valueset = bundle.entry[0].resource if bundle.entry.size > 0
@@ -51,18 +51,56 @@ module Crucible
           @valueset = valueset_defined
         end
 
-        v2_codesystem = @resources.load_fixture('terminology/v2-codesystem', :json)
-        v2_valueset = @resources.load_fixture('terminology/v2-valueset', :json)
-        @v2_codesystem_id = @client.create(v2_codesystem).id
-        @v2_valueset_id = @client.create(v2_valueset).id
+        # find v2-0487 value set and code system, create if it doesn't exist
+        @v2_codesystem_id = nil
+        @v2_valueset_id = nil
+        options = {
+          :search => {
+            :flag => false,
+            :compartment => nil,
+            :parameters => {
+              'url' => 'http://hl7.org/fhir/ValueSet/v2-0487'
+            }
+          }
+        }
+        reply = @client.search(FHIR::STU3::ValueSet, options)
+        if reply.code == 200 && !reply.resource.nil?
+          bundle = reply.resource
+          @v2_valueset_id = bundle.entry[0].resource.id if bundle.entry.size > 0
+        end
+
+        if @v2_valueset_id.nil?
+          v2_valueset = @resources.load_fixture('terminology/v2-valueset', :json)
+          @v2_valueset_id = @client.create(v2_valueset).id
+        end
+
+        options = {
+          :search => {
+            :flag => false,
+            :compartment => nil,
+            :parameters => {
+              'url' => 'http://hl7.org/fhir/v2/0487'
+            }
+          }
+        }
+        reply = @client.search(FHIR::STU3::CodeSystem, options)
+        if reply.code == 200 && !reply.resource.nil?
+          bundle = reply.resource
+          @v2_codesystem_id = bundle.entry[0].resource.id if bundle.entry.size > 0
+        end
+
+        if @v2_codesystem_id.nil?
+          v2_codesystem = @resources.load_fixture('terminology/v2-codesystem', :json)
+          @v2_codesystem_id = @client.create(v2_codesystem).id
+        end
       end
 
       def teardown
-        @client.destroy(FHIR::ValueSet, @valueset_defined_id) if @valueset_defined_id
-        @client.destroy(FHIR::CodeSystem, @codesystem_types_id) if @codesystem_types_id
-        @client.destroy(FHIR::CodeSystem, @codesystem_rsrcs_id) if @codesystem_rsrcs_id
-        @client.destroy(FHIR::ValueSet, @v2_valueset_id) if @v2_valueset_id
-        @client.destroy(FHIR::CodeSystem, @v2_codesystem_id) if @v2_codesystem_id
+        @client.destroy(FHIR::STU3::ValueSet, @valueset_defined_id) if @valueset_defined_id
+        @client.destroy(FHIR::STU3::CodeSystem, @codesystem_types_id) if @codesystem_types_id
+        @client.destroy(FHIR::STU3::CodeSystem, @codesystem_rsrcs_id) if @codesystem_rsrcs_id
+        @client.destroy(FHIR::STU3::ValueSet, @v2_valueset_id) if @v2_valueset_id
+        @client.destroy(FHIR::STU3::CodeSystem, @v2_codesystem_id) if @v2_codesystem_id
         # CT13 does # DELETE codesystem_simple
         # CT13 does # DELETE valueset_simple
         # CT17 does # DELETE conceptmap_created_id
@@ -85,8 +123,8 @@ module Crucible
           }
           reply = @client.value_set_expansion(options)
           assert_response_ok(reply)
-          assert_resource_type(reply, FHIR::ValueSet)
-          reference_set = FHIR::StructureDefinition::METADATA['type']['valid_codes'].values.flatten
+          assert_resource_type(reply, FHIR::STU3::ValueSet)
+          reference_set = FHIR::STU3::StructureDefinition::METADATA['type']['valid_codes'].values.flatten
           check_expansion_for_concepts(reply.resource, reference_set)
         end
 
@@ -106,8 +144,8 @@ module Crucible
           }
           reply = @client.value_set_expansion(options)
           assert_response_ok(reply)
-          assert_resource_type(reply, FHIR::ValueSet)
-          reference_set = FHIR::StructureDefinition::METADATA['type']['valid_codes'].values.flatten
+          assert_resource_type(reply, FHIR::STU3::ValueSet)
+          reference_set = FHIR::STU3::StructureDefinition::METADATA['type']['valid_codes'].values.flatten
           check_expansion_for_concepts(reply.resource, reference_set)
         end
 
@@ -122,7 +160,7 @@ module Crucible
             :operation => {
               :method => how,
               :parameters => {
-                'identifier' => { type: 'Uri', value: 'http://hl7.org/fhir/ValueSet/data-types' },
+                'url' => { type: 'Uri', value: 'http://hl7.org/fhir/ValueSet/data-types' },
                 'code' => { type: 'Code', value: 'base64Binary' },
                 'system' => { type: 'Uri', value: 'http://hl7.org/fhir/data-types' }
               }
@@ -146,7 +184,7 @@ module Crucible
               :parameters => {
                 'code' => { type: 'Code', value: 'BRN' },
                 'system' => { type: 'Uri', value: 'http://hl7.org/fhir/v2/0487' },
-                'identifier' => { type: 'Uri', value: 'http://hl7.org/fhir/ValueSet/v2-0487' }
+                'url' => { type: 'Uri', value: 'http://hl7.org/fhir/ValueSet/v2-0487' }
               }
             }
           }
@@ -241,7 +279,7 @@ module Crucible
           }
           reply = @client.value_set_expansion(options)
           assert_response_ok(reply)
-          assert_resource_type(reply, FHIR::ValueSet)
+          assert_resource_type(reply, FHIR::STU3::ValueSet)
           reference_set = @codesystem_simple.concept.map(&:code)
           check_expansion_for_concepts(reply.resource, reference_set)
         end
@@ -260,7 +298,7 @@ module Crucible
               :parameters => {
                 'code' => { type: 'Code', value: @codesystem_simple.concept.first.code },
                 'system' => { type: 'Uri', value: @codesystem_simple.url },
-                'identifier' => { type: 'Uri', value: @valueset_simple.url }
+                'url' => { type: 'Uri', value: @valueset_simple.url }
               }
             }
           }
@@ -301,11 +339,11 @@ module Crucible
         }
 
         skip 'CodeSystem not created in CT09.' if @codesystem_created_id.nil?
-        reply = @client.destroy FHIR::CodeSystem, @codesystem_created_id
+        reply = @client.destroy FHIR::STU3::CodeSystem, @codesystem_created_id
         assert_response_code(reply, 204)
 
         skip if @valueset_created_id.nil?
-        @client.destroy FHIR::ValueSet, @valueset_created_id
+        @client.destroy FHIR::STU3::ValueSet, @valueset_created_id
         assert_response_code(reply, 204)
       end
 
@@ -357,7 +395,7 @@ module Crucible
           links "#{BASE_SPEC_LINK}/conceptmap-operations.html#closure"
           validates resource: 'ConceptMap', methods: ['$closure']
         }
-        coding = FHIR::Coding.new({'system'=>'http://snomed.info/sct','code'=>'22298006'})
+        coding = FHIR::STU3::Coding.new({'system'=>'http://snomed.info/sct','code'=>'22298006'})
         options = {
           :operation => {
             :method => 'POST',
@@ -369,7 +407,7 @@ module Crucible
         }
         reply = @client.closure_table_maintenance(options)
         assert_response_ok(reply)
-        assert_resource_type(reply, FHIR::ConceptMap)
+        assert_resource_type(reply, FHIR::STU3::ConceptMap)
         code = reply.resource.element.find{|x|x.code=='22298006'}
         assert code, 'Closure Table Operation should return the code that was supplied in the request.'
       end
@@ -382,7 +420,7 @@ module Crucible
         }
 
         skip 'ConceptMap not created in test CT14.' if @conceptmap_created_id.nil?
-        reply = @client.destroy FHIR::ConceptMap, @conceptmap_created_id
+        reply = @client.destroy FHIR::STU3::ConceptMap, @conceptmap_created_id
         assert_response_code(reply, 204)
       end
 
@@ -406,12 +444,12 @@ module Crucible
             doc.root.add_namespace_definition('fhir', 'http://hl7.org/fhir')
             doc.root.add_namespace_definition('xhtml', 'http://www.w3.org/1999/xhtml')
             e = doc.root.xpath("./fhir:parameter[fhir:name[@value=\"#{name}\"]]/fhir:#{attribute}").first
-            assert(e[:value]==value,"Output parameters do not contain #{name}=#{value}")
+            assert(e[:value].to_s==value.to_s,"Output parameters do not contain #{name}=#{value}")
           else
             hash = JSON.parse(contents)
             params = hash['parameter']
             p = params.select{|p|p['name']==name}.first
-            assert(p[attribute]==value,"Output parameters do not contain #{name}=#{value}")
+            assert(p[attribute].to_s==value.to_s,"Output parameters do not contain #{name}=#{value}")
           end
         rescue Exception => e
           raise AssertionException.new 'Unable to parse response parameters', e.message

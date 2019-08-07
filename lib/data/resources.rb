@@ -6,7 +6,7 @@ module Crucible
 
       def initialize(fhir_version = nil)
         @fhir_version = fhir_version
-        @namespace = FHIR
+        @namespace = FHIR::STU3
         @namespace = FHIR::DSTU2 if @fhir_version == :dstu2
       end
 
